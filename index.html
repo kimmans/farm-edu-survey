@@ -112,7 +112,7 @@ var CONFIG = {
 
 /* ================= 기본 유틸 ================= */
 var Q_ = new URLSearchParams(location.search);
-var DAY = Q_.get('day') === '3' ? 3 : 2;
+var DAY = Q_.get('day') === '3' ? 3 : 1; // 예전 QR의 ?day=2 도 1년차 조사일로 받는다
 var BLIND = Q_.get('blind') === '1';
 var DEMO = !CONFIG.ENDPOINT;
 var NS = 'fl3:';
@@ -265,7 +265,7 @@ function noticeItems(){
 var PAGES = [
   { id:'S0', title:'조사 안내', notice:true, qs:[ single('CONSENT','위 내용을 읽었으며 참여에 동의하십니까?',[{v:'agree',t:'동의하고 참여합니다'},{v:'decline',t:'참여하지 않습니다'}]) ] },
   { id:'S1', title:'영농 맥락', qs:[
-    single('YEAR','청년농업인 영농정착지원사업 선정 후 현재 몇 년차입니까?',o([['Y2','2년차'],['Y3','3년차'],['UNSURE','다름·잘 모르겠음']]),{help:'조사일에 맞춰 미리 선택해 두었습니다. 다르면 바꿔 주세요.'}),
+    single('YEAR','청년농업인 영농정착지원사업 선정 후 현재 몇 년차입니까?',o([['Y1','1년차'],['Y3','3년차'],['UNSURE','다름·잘 모르겠음']]),{help:'조사일에 맞춰 미리 선택해 두었습니다. 다르면 바꿔 주세요.'}),
     single('FARM_EXP','실제 영농을 시작한 지 얼마나 되었습니까?',o([['PREP','준비 중'],['LT1','1년 미만'],['Y1_2','1~2년'],['Y3_4','3~4년'],['GE5','5년 이상'],['UNSURE','응답 어려움']])),
     single('PRODUCT_GROUP','현재 가장 비중이 큰 주품목 하나는 무엇입니까?',o([['GRAIN','식량작물'],['FRUITVEG','과채류'],['FRUIT','과수'],['SPICE','조미채소'],['LIVESTOCK','축산'],['FLOWER_SPECIAL','화훼·특용'],['ETC','기타'],['UNDECIDED','아직 정하지 않음']])),
     { id:'PRODUCT_ITEM', type:'single', label:'세부 품목을 골라 주세요.', opts:[], dyn:function(){ var g=A('PRODUCT_GROUP'); return (ITEMS[g]||[]).map(function(x){return {v:x[0],t:x[1]};}).concat([{v:'OTHER',t:'목록에 없음',other:true}]); }, show:function(){ var g=A('PRODUCT_GROUP'); return !!g&&g!=='UNDECIDED'; } },
@@ -378,7 +378,7 @@ function showNav(on){ navbar.style.display = on ? '' : 'none'; }
 function render(keepScroll){
   var y=window.scrollY;
   if(DEMO){ var d=document.getElementById('demo'); d.hidden=false;
-    d.innerHTML='데모 모드 · 응답은 이 기기에만 저장됩니다 · 조사일: '+DAY+'년차 ('+(DAY===2?'<a href="?day=3">3년차 조사일로</a>':'<a href="?day=2">2년차 조사일로</a>')+') · <a href="?reset=1&day='+DAY+'">처음부터 다시</a>'; }
+    d.innerHTML='데모 모드 · 응답은 이 기기에만 저장됩니다 · 조사일: '+DAY+'년차 ('+(DAY===1?'<a href="?day=3">3년차 조사일로</a>':'<a href="?day=1">1년차 조사일로</a>')+') · <a href="?reset=1&day='+DAY+'">처음부터 다시</a>'; }
   document.getElementById('stg').textContent = (BLIND?'':(CONFIG.ORG_LABEL?CONFIG.ORG_LABEL+' · ':''))+CONFIG.SURVEY_TITLE;
   if(S.done){ renderDone(); return; }
   if(pending){ renderPending(); return; }
