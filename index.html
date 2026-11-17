@@ -59,10 +59,10 @@ textarea{min-height:130px;resize:vertical;line-height:1.5}
 .rkc:focus-within .mk{outline:2px solid var(--g);outline-offset:2px}
 .at{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin-top:9px;font-size:16px;line-height:1.4}
 .at .ak{color:var(--mu);font-size:14px;padding-top:1px}
-.rw{background:var(--g);color:#fff;border-radius:16px;padding:18px 18px 16px;margin:16px 0 4px;text-align:center}
-.rw .rs{font-size:15px;opacity:.92}
-.rw .rb{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin:4px 0 8px}
-.rw .rc{font-size:14px;background:rgba(255,255,255,.16);border-radius:8px;padding:6px 10px;display:inline-block}
+.rw{background:var(--g);color:#fff;border-radius:12px;padding:11px 14px;margin:12px 0 4px;text-align:center}
+.rw .rs{font-size:13px;opacity:.92}
+.rw .rb{font-size:19px;font-weight:800;letter-spacing:-.02em;line-height:1.3;margin:2px 0 3px}
+.rw .rc{font-size:12.5px;opacity:.85}
 .nl{list-style:none;margin:14px 0 22px;padding:0}
 .nl li{position:relative;padding:0 0 0 18px;margin:10px 0;font-size:16px}
 .nl li:before{content:"";position:absolute;left:2px;top:.68em;width:6px;height:6px;border-radius:50%;background:var(--g)}
@@ -272,7 +272,7 @@ var PAGES = [
     single('FARM_TYPE','주된 영농 환경은 무엇입니까?',o([['OPEN','노지'],['FACILITY','시설(비닐하우스 등)'],['SMART','스마트팜·환경제어 시설'],['LIVESTOCK_FAC','축사·사육시설'],['MIXED','혼합'],['UNSURE','판단 어려움']]),{help:'스마트팜 여부와 시설·노지를 함께 구분하는 문항입니다.'})
   ]},
   { id:'S2a', title:'신청할 과정 선택', intro:'다음은 모두 휴경기에 열릴 수 있는 4시간짜리 가상 선택교육입니다. 일정·교육방법·이수 인정 조건은 같다고 가정하고 내용만 비교해 주세요. 실제 신청을 받는 화면은 아닙니다.', qs:[
-    { id:'COURSES_ALL', type:'multi', min:2, label:'일정이 맞는다면, 신청을 고려할 과정은 무엇입니까? (2개 이상 선택)', help:'과정은 2개 이상 골라 주세요. 고려할 과정이 없으면 ‘신청할 과정 없음’을 고르시면 됩니다.', dyn:function(){ return cardOpts().concat([{v:'NONE',t:'신청할 과정 없음',ex:true},{v:'NEED_INFO',t:'정보가 더 필요함',ex:true}]); }, opts:[] }
+    { id:'COURSES_ALL', type:'multi', min:2, label:'교육 일정이 맞는다면, 신청하고 싶은 교육과정은 무엇입니까? (2개 이상 선택)', help:'교육과정은 2개 이상 골라 주세요. 신청하고 싶은 과정이 없으면 ‘신청할 과정 없음’을 고르시면 됩니다.', dyn:function(){ return cardOpts().concat([{v:'NONE',t:'신청할 과정 없음',ex:true},{v:'NEED_INFO',t:'정보가 더 필요함',ex:true}]); }, opts:[] }
   ]},
   { id:'S2b', title:'가장 먼저 신청할 과정', intro:'아래 과정 소개도 실제 모집 공고가 아닌 비교용 예시입니다.', qs:[
     { id:'COURSE_FIRST', type:'single', label:'방금 고른 과정 중 가장 먼저 신청할 하나는 무엇입니까?', dyn:function(){ return cardOpts(A('COURSES_ALL')||[]); }, opts:[], show:hasCourse },
@@ -393,7 +393,7 @@ function render(keepScroll){
   var h='<div class="eye">'+esc(p.title)+'</div>';
   if(p.notice){
     h+='<h1>'+esc(CONFIG.SURVEY_TITLE)+'</h1>'
-      +'<div class="rw"><div class="rs">끝까지 답하고 제출하신 분께 응답비로</div><div class="rb">🎁 '+esc(CONFIG.COUPON_LABEL)+'</div><div class="rc">중간에 그만두면 받을 수 없습니다</div></div>'
+      +'<div class="rw"><div class="rs">끝까지 답하고 제출하신 분께 응답비로</div><div class="rb">'+esc(CONFIG.COUPON_LABEL)+'</div><div class="rc">중간에 그만두면 받을 수 없습니다</div></div>'
       +'<ul class="nl">'+noticeItems().map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
     p.qs.forEach(function(q){ h+=qHtml(q); });
   } else if(p.submit){
