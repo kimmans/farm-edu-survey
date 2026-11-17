@@ -102,21 +102,22 @@ var CONFIG = {
   ENDPOINT: 'https://script.google.com/macros/s/AKfycbx-Z36xQpaC1ubbuN5MR2lcxoXMRxPkPxjD9rF6TVQOUBS78nPNcg5uIu4rkBJ7WDm3/exec',                 // Apps Script 웹앱 URL. 비워두면 데모 모드(응답이 이 기기에만 저장)
   ORG_LABEL: '팜러닝',          // 화면 표기용 기관명. ?blind=1 이면 감춤(블라인드 증빙 캡처용)
   SURVEY_TITLE: '청년농업인 선택교육 심층 인터뷰',
-  SURVEY_VERSION: 'v2.1',
-  COUPON_LABEL: '커피쿠폰 1만 원',
-  COUPON_SEND_NOTE: '남겨 주신 휴대전화번호로 커피쿠폰을 보내드립니다.',
-  PRIVACY_RETENTION: '커피쿠폰 발송 후 바로 폐기',
-  PRIVACY_VERSION: 'p1',        // 동의 문구를 바꾸면 올릴 것. 동의 기록에 함께 저장됨
+  SURVEY_VERSION: 'v2.2',
+  COUPON_LABEL: '편의점 상품권 1만 5천 원',
+  COUPON_SEND_NOTE: '남겨 주신 휴대전화번호로 편의점 모바일 상품권을 보내드립니다.',
+  PRIVACY_RETENTION: '상품권 발송 후 바로 폐기',
+  PRIVACY_VERSION: 'p2',        // 동의 문구를 바꾸면 올릴 것. 동의 기록에 함께 저장됨
   CONTACT: 'hanmu1@farmlearning.co.kr'                   // 문의처(전화·이메일). 비워두면 표시하지 않음
 };
 
 /* ================= 기본 유틸 ================= */
 var Q_ = new URLSearchParams(location.search);
-var DAY = Q_.get('day') === '3' ? 3 : 1; // 예전 QR의 ?day=2 도 1년차 조사일로 받는다
+// 주소는 하나다. 선정 연차는 첫 화면에서 고른다(예전 QR의 ?day= 값은 무시한다).
+function yearNo(){ var m=/^Y([123])$/.exec((S&&S.A&&S.A.YEAR)||''); return m?Number(m[1]):0; }
 var BLIND = Q_.get('blind') === '1';
 var DEMO = !CONFIG.ENDPOINT;
 var NS = 'fl3:';
-var K = { draft:NS+'draft:'+DAY, done:NS+'done:'+DAY, queue:NS+'queue', demo:NS+'demo', ver:NS+'ver:'+DAY, coupon:NS+'coupon' };
+var K = { draft:NS+'draft', done:NS+'done', queue:NS+'queue', demo:NS+'demo', ver:NS+'ver', coupon:NS+'coupon' };
 if (DEMO && Q_.get('reset') === '1') { try { Object.keys(localStorage).filter(function(k){return k.indexOf(NS)===0;}).forEach(function(k){localStorage.removeItem(k);}); } catch(e){} }
 var store = {
   get:function(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
@@ -255,24 +256,23 @@ function noticeItems(){
     '청년농업인 맞춤형 선택교육의 운영 제안·기획과 과정 개선에 활용합니다.',
     '참여는 자율이며, 응답 여부와 답변 내용은 지원금·의무교육 이행 평가에 영향을 주지 않습니다.',
     '개인 단위 응답은 지원기관에 제공하지 않습니다.',
-    '설문 문항에서는 이름·연락처를 묻지 않습니다. 제출 후 쿠폰을 받으실 분만 이름과 연락처를 따로 남깁니다.',
-    '이름과 연락처는 커피쿠폰 발송에만 쓰고, 발송 후 바로 폐기합니다.',
+    '설문 문항에서는 이름·연락처를 묻지 않습니다. 제출 후 상품권을 받으실 분만 이름과 연락처를 따로 남깁니다.',
+    '이름과 연락처는 편의점 상품권 발송에만 쓰고, 발송 후 바로 폐기합니다.',
     '예상 응답시간은 약 20분입니다.',
     '과정 소개는 실제 개설 공고가 아닌 비교용 예시입니다.'
   ].concat((CONFIG.CONTACT && !BLIND) ? ['문의: '+CONFIG.CONTACT] : []);
 }
 
 var PAGES = [
-  { id:'S0', title:'조사 안내', notice:true, qs:[ single('CONSENT','위 내용을 읽었으며 참여에 동의하십니까?',[{v:'agree',t:'동의하고 참여합니다'},{v:'decline',t:'참여하지 않습니다'}]) ] },
+  { id:'S0', title:'조사 안내', notice:true, qs:[ single('YEAR','청년농업인 영농정착지원사업 선정 후 현재 몇 년차입니까?',o([['Y1','1년차'],['Y2','2년차'],['Y3','3년차']])), single('CONSENT','위 내용을 읽었으며 참여에 동의하십니까?',[{v:'agree',t:'동의하고 참여합니다'},{v:'decline',t:'참여하지 않습니다'}]) ] },
   { id:'S1', title:'영농 맥락', qs:[
-    single('YEAR','청년농업인 영농정착지원사업 선정 후 현재 몇 년차입니까?',o([['Y1','1년차'],['Y3','3년차'],['UNSURE','다름·잘 모르겠음']]),{help:'조사일에 맞춰 미리 선택해 두었습니다. 다르면 바꿔 주세요.'}),
     single('FARM_EXP','실제 영농을 시작한 지 얼마나 되었습니까?',o([['PREP','준비 중'],['LT1','1년 미만'],['Y1_2','1~2년'],['Y3_4','3~4년'],['GE5','5년 이상'],['UNSURE','응답 어려움']])),
     single('PRODUCT_GROUP','현재 가장 비중이 큰 주품목 하나는 무엇입니까?',o([['GRAIN','식량작물'],['FRUITVEG','과채류'],['FRUIT','과수'],['SPICE','조미채소'],['LIVESTOCK','축산'],['FLOWER_SPECIAL','화훼·특용'],['ETC','기타'],['UNDECIDED','아직 정하지 않음']])),
     { id:'PRODUCT_ITEM', type:'single', label:'세부 품목을 골라 주세요.', opts:[], dyn:function(){ var g=A('PRODUCT_GROUP'); return (ITEMS[g]||[]).map(function(x){return {v:x[0],t:x[1]};}).concat([{v:'OTHER',t:'목록에 없음',other:true}]); }, show:function(){ var g=A('PRODUCT_GROUP'); return !!g&&g!=='UNDECIDED'; } },
     single('FARM_TYPE','주된 영농 환경은 무엇입니까?',o([['OPEN','노지'],['FACILITY','시설(비닐하우스 등)'],['SMART','스마트팜·환경제어 시설'],['LIVESTOCK_FAC','축사·사육시설'],['MIXED','혼합'],['UNSURE','판단 어려움']]),{help:'스마트팜 여부와 시설·노지를 함께 구분하는 문항입니다.'})
   ]},
   { id:'S2a', title:'신청할 과정 선택', intro:'다음은 모두 휴경기에 열릴 수 있는 4시간짜리 가상 선택교육입니다. 일정·교육방법·이수 인정 조건은 같다고 가정하고 내용만 비교해 주세요. 실제 신청을 받는 화면은 아닙니다.', qs:[
-    { id:'COURSES_ALL', type:'multi', label:'일정이 맞는다면, 신청을 고려할 과정은 모두 무엇입니까?', dyn:function(){ return cardOpts().concat([{v:'NONE',t:'신청할 과정 없음',ex:true},{v:'NEED_INFO',t:'정보가 더 필요함',ex:true}]); }, opts:[] }
+    { id:'COURSES_ALL', type:'multi', min:2, label:'일정이 맞는다면, 신청을 고려할 과정은 무엇입니까? (2개 이상 선택)', help:'과정은 2개 이상 골라 주세요. 고려할 과정이 없으면 ‘신청할 과정 없음’을 고르시면 됩니다.', dyn:function(){ return cardOpts().concat([{v:'NONE',t:'신청할 과정 없음',ex:true},{v:'NEED_INFO',t:'정보가 더 필요함',ex:true}]); }, opts:[] }
   ]},
   { id:'S2b', title:'가장 먼저 신청할 과정', intro:'아래 과정 소개도 실제 모집 공고가 아닌 비교용 예시입니다.', qs:[
     { id:'COURSE_FIRST', type:'single', label:'방금 고른 과정 중 가장 먼저 신청할 하나는 무엇입니까?', dyn:function(){ return cardOpts(A('COURSES_ALL')||[]); }, opts:[], show:hasCourse },
@@ -296,14 +296,14 @@ var PAGES = [
     multi('SCHEDULE','실제 교육을 신청할 때 가능한 시간대는 언제입니까? (복수선택)',o([['WD_AM','평일 오전'],['WD_PM','평일 오후'],['WD_EVE','평일 야간'],['WE_AM','주말 오전'],['WE_PM','주말 오후'],['VARIES','일정에 따라 다름',1]]))
   ]},
   { id:'S6b', title:'홍보와 신청', qs:[
-    multi('PROMO_CHANNEL','교육 공지를 실제로 확인할 가능성이 높은 경로는 무엇입니까? (최대 2개)',o([['SMS','문자'],['MESSENGER','카카오톡 등 메시지'],['COMMUNITY','청년농업인 커뮤니티'],['ATC','농업기술센터 안내'],['AFA_SITE','농정원 홈페이지·신청 시스템'],['SNS','SNS'],['OTHER','기타']]),{max:2}),
+    single('PROMO_CHANNEL','교육 공지를 확인할 때 가장 우선하는 채널은 무엇입니까?',o([['SMS','개별 문자'],['KAKAO','카카오톡'],['KAKAO_OPEN','카카오톡 오픈채널'],['EMAIL','이메일'],['PAGE','전용 소개 페이지'],['PHONE','전화']])),
     single('PROMO_INFO','신청을 결정하기 전, 공지에서 가장 먼저 확인할 정보는 무엇입니까?',o([['FIT','내 품목·수준에 맞는 내용'],['DATE','날짜·시간'],['METHOD_PLACE','교육방식·장소'],['INSTRUCTOR_PRACTICE','강사·실습'],['OUTCOME','교육 후 얻을 결과'],['CREDIT','시수 인정'],['OTHER','기타']])),
     text('FINAL_COMMENT','위 질문에서 빠진 교육 내용이나 참여 조건이 있다면 적어주세요. (선택)',{help:'실명·전화번호 등 개인정보는 적지 마세요.'})
   ]},
-  { id:'S3a', title:'비교할 공통 실무 분야', intro:'마지막 순서입니다. 조건이 다른 과정 네 개를 놓고 신청 순서를 정하는 비교를 6번 합니다. 먼저 비교에 쓸 공통 실무 분야를 정합니다.', qs:[
+  { id:'S3a', title:'비교할 공통 실무 분야', intro:'마지막 순서입니다. 본인의 주품목 교육과 공통 실무 교육을 비교해, 어떤 과정을 더 선호하시는지 자세히 여쭙니다. 먼저 비교할 공통 실무 분야를 골라 주세요.', qs:[
     single('GENERAL_TOPIC','비교할 공통 실무 분야로, 본인에게 가장 관련 있는 것은 무엇입니까?',o([['B','판매·유통'],['C','농장경영'],['D','현장기술'],['NONE','관련 있는 분야 없음']]))
   ]},
-  { id:'S3b', title:'과정 비교', intro:'지금부터 가상의 과정 네 개를 6번 비교합니다. 매번 내용, 장소(온라인·대면과 이동시간), 진행 방식, 교육 시간이 달라집니다. 일정은 맞는다고 가정합니다. 실제 모집 공고가 아닌 비교용 예시입니다.', qs:dceQs().concat([
+  { id:'S3b', title:'과정 비교', intro:'주품목 교육과 공통 실무 교육으로 구성한 과정 네 개를 보여 드립니다. 신청하고 싶은 순서대로 골라 주세요. 같은 형식의 질문이 6개 이어지며, 질문마다 내용, 장소(온라인·대면과 이동시간), 진행 방식, 교육 시간이 달라집니다. 일정은 맞는다고 가정합니다. 실제 모집 공고가 아닌 예시입니다.', qs:dceQs().concat([
     single('DCE_REASON','방금 과정을 고를 때 가장 크게 본 조건은 무엇입니까?',o([['CONTENT','교육 내용'],['MODE','온라인·대면 방식'],['TRAVEL','이동 거리'],['STYLE','강의·실습·사례 등 진행 방식'],['LENGTH','교육 시간'],['OTHER','기타']]))
   ])},
   { id:'S7', title:'제출', submit:true, qs:[] }
@@ -366,19 +366,23 @@ function qHtml(q){
   return h+'</div>';
 }
 function valid(p){
-  if(p.notice) return A('CONSENT')==='agree' || A('CONSENT')==='decline';
+  if(p.notice) return A('CONSENT')==='decline' || (A('CONSENT')==='agree' && yearNo()>0);
   return p.qs.every(function(q){
     if(!qVisible(q)||q.type==='text') return true;
     var a=A(q.id);
     if(q.type==='rank') return Array.isArray(a)&&a.length===DCE_ALT.length+1;
-    return q.type==='multi' ? (Array.isArray(a)&&a.length>0) : !!a;
+    if(q.type!=='multi') return !!a;
+    if(!Array.isArray(a)||!a.length) return false;
+    // 최소 개수가 있는 문항: '없음' 같은 단독 보기를 골랐으면 그대로 통과
+    if(q.min){ var exo=qOpts(q).filter(function(x){return x.ex;}).map(function(x){return x.v;}); return a.some(function(v){return exo.indexOf(v)>=0;}) || a.length>=q.min; }
+    return true;
   });
 }
 function showNav(on){ navbar.style.display = on ? '' : 'none'; }
 function render(keepScroll){
   var y=window.scrollY;
   if(DEMO){ var d=document.getElementById('demo'); d.hidden=false;
-    d.innerHTML='데모 모드 · 응답은 이 기기에만 저장됩니다 · 조사일: '+DAY+'년차 ('+(DAY===1?'<a href="?day=3">3년차 조사일로</a>':'<a href="?day=1">1년차 조사일로</a>')+') · <a href="?reset=1&day='+DAY+'">처음부터 다시</a>'; }
+    d.innerHTML='데모 모드 · 응답은 이 기기에만 저장됩니다 · <a href="?reset=1">처음부터 다시</a>'; }
   document.getElementById('stg').textContent = (BLIND?'':(CONFIG.ORG_LABEL?CONFIG.ORG_LABEL+' · ':''))+CONFIG.SURVEY_TITLE;
   if(S.done){ renderDone(); return; }
   if(pending){ renderPending(); return; }
@@ -389,9 +393,9 @@ function render(keepScroll){
   var h='<div class="eye">'+esc(p.title)+'</div>';
   if(p.notice){
     h+='<h1>'+esc(CONFIG.SURVEY_TITLE)+'</h1>'
-      +'<div class="rw"><div class="rs">끝까지 답하고 제출하신 분께 응답비로</div><div class="rb">☕ '+esc(CONFIG.COUPON_LABEL)+'</div><div class="rc">중간에 그만두면 받을 수 없습니다</div></div>'
+      +'<div class="rw"><div class="rs">끝까지 답하고 제출하신 분께 응답비로</div><div class="rb">🎁 '+esc(CONFIG.COUPON_LABEL)+'</div><div class="rc">중간에 그만두면 받을 수 없습니다</div></div>'
       +'<ul class="nl">'+noticeItems().map(function(t){return '<li>'+esc(t)+'</li>';}).join('')+'</ul>';
-    h+=qHtml(p.qs[0]);
+    p.qs.forEach(function(q){ h+=qHtml(q); });
   } else if(p.submit){
     h+='<h1>응답을 제출할까요?</h1><p class="sub">제출 후에는 수정할 수 없습니다.</p>'
       +'<div class="info">끝까지 답해 주셨습니다. 제출하면 응답비('+esc(CONFIG.COUPON_LABEL)+') 신청 화면이 나옵니다.</div>';
@@ -462,7 +466,7 @@ nx.addEventListener('click',function(){
   var p=curPage(); if(!valid(p)) return;
   if(p.notice){
     if(A('CONSENT')==='decline'){ app.innerHTML='<h1>참여하지 않으셨습니다</h1><div class="info">응답은 저장되지 않았습니다. 마음이 바뀌면 이 화면을 새로 열어 참여하실 수 있습니다.</div>'; showNav(false); store.del(K.draft); return; }
-    if(!S.startedAt){ S.startedAt=Date.now(); if(!A('YEAR')) S.A.YEAR='Y'+DAY; }
+    if(!S.startedAt){ S.startedAt=Date.now(); }
     nx.disabled=true;
     assignVersion(function(){ go(1); });
     return;
@@ -488,7 +492,7 @@ function assignVersion(cb){
   var done=false;
   function fb(){ if(done) return; done=true; S.version=1+Math.floor(Math.random()*4); S.versionLocal=true; save(); cb(); }
   var to=setTimeout(fb,4000);
-  fetch(CONFIG.ENDPOINT+'?action=assign&day='+DAY).then(function(r){return r.json();}).then(function(j){
+  fetch(CONFIG.ENDPOINT+'?action=assign&day='+yearNo()).then(function(r){return r.json();}).then(function(j){
     if(done) return; done=true; clearTimeout(to); S.version=(j&&j.version)||(1+Math.floor(Math.random()*4)); save(); cb();
   }).catch(function(){ clearTimeout(to); fb(); });
 }
@@ -496,7 +500,7 @@ function post(body){
   return fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)}).then(function(r){return r.json();});
 }
 function beacon(screen){
-  try{ fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'progress',day:DAY,screen:screen}),keepalive:true}).catch(function(){}); }catch(e){}
+  try{ fetch(CONFIG.ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'progress',day:yearNo(),screen:screen}),keepalive:true}).catch(function(){}); }catch(e){}
 }
 
 /* ================= 제출 ================= */
@@ -554,8 +558,7 @@ function buildPayload(){
     data['DCE_'+n+'_FIRST']=rk[0]||'';
     st.alts.forEach(function(code,k){ data['DCE_'+n+'_'+DCE_ALT[k]]=dceMachine(code); });
   }
-  data.YEAR_FLAG = (A('YEAR')!=='Y'+DAY) ? 'YEAR_MISMATCH' : '';
-  return { requestId:S.requestId, surveyVersion:CONFIG.SURVEY_VERSION, surveyDayGroup:DAY, consent:'agree', displayVersion:S.version,
+  return { requestId:S.requestId, surveyVersion:CONFIG.SURVEY_VERSION, surveyDayGroup:yearNo(), consent:'agree', displayVersion:S.version,
            durationSec:Math.round((Date.now()-(S.startedAt||Date.now()))/1000), completionStatus:'COMPLETE', data:data, view:buildView() };
 }
 function submit(){
@@ -593,7 +596,7 @@ function renderPending(){
   document.getElementById('retry').onclick=function(){ this.disabled=true; this.textContent='보내는 중…'; send(pending); };
 }
 
-/* ================= 완료 화면 · 커피쿠폰 신청 ================= */
+/* ================= 완료 화면 · 편의점 상품권 신청 ================= */
 function setCoupon(state){ S.done.coupon=state; store.set(K.done,S.done); render(); }
 function digits(s){ var d=String(s||'').replace(/\D/g,''); if(d.indexOf('82')===0 && d.length>=11) d='0'+d.slice(2); return d; } // +82 10… 자동완성 대응
 function fmtPhone(d){ d=digits(d).slice(0,11); if(d.length<4) return d; if(d.length<8) return d.slice(0,3)+'-'+d.slice(3); return d.slice(0,3)+'-'+d.slice(3,d.length-4)+'-'+d.slice(d.length-4); }
@@ -602,7 +605,7 @@ function couponFormHtml(){
   var contact = (CONFIG.CONTACT && !BLIND) ? '<dt>문의</dt><dd>'+esc(CONFIG.CONTACT)+'</dd>' : '';
   return '<section class="cp">'
     +'<h2>응답비로 '+esc(CONFIG.COUPON_LABEL)+'을 드립니다</h2>'
-    +'<p class="help">이름과 휴대전화번호를 남겨 주세요. 커피쿠폰 발송에만 쓰고, 발송 후 바로 폐기합니다. 방금 제출한 응답 내용과는 연결하지 않습니다.</p>'
+    +'<p class="help">이름과 휴대전화번호를 남겨 주세요. 편의점 상품권 발송에만 쓰고, 발송 후 바로 폐기합니다. 방금 제출한 응답 내용과는 연결하지 않습니다.</p>'
     +'<label class="fl">이름<input id="cn" type="text" autocomplete="name" maxlength="20" placeholder="홍길동"></label>'
     +'<label class="fl">휴대전화번호<input id="cph" type="tel" inputmode="numeric" autocomplete="tel" maxlength="20" placeholder="010-0000-0000"></label>'
     +'<div class="pv"><b>개인정보 수집·이용 동의</b><dl>'
@@ -610,20 +613,20 @@ function couponFormHtml(){
     +'<dt>수집 항목</dt><dd>이름, 휴대전화번호</dd>'
     +'<dt>수집·이용 목적</dt><dd>'+esc(CONFIG.COUPON_LABEL)+' 발송 (다른 용도로 쓰지 않음)</dd>'
     +'<dt>보유·이용 기간</dt><dd>'+esc(CONFIG.PRIVACY_RETENTION)+'</dd>'
-    +'<dt>발송 업무 위탁</dt><dd>쿠폰 발송에 필요한 범위에서 모바일 쿠폰 발송 서비스에 이름과 휴대전화번호가 전달됩니다.</dd>'
-    +'<dt>동의를 거부할 권리</dt><dd>동의하지 않으셔도 됩니다. 다만 동의하지 않으면 쿠폰을 보내드릴 수 없습니다. 이미 제출한 응답에는 영향이 없습니다.</dd>'
+    +'<dt>발송 업무 위탁</dt><dd>상품권 발송에 필요한 범위에서 모바일 상품권 발송 서비스에 이름과 휴대전화번호가 전달됩니다.</dd>'
+    +'<dt>동의를 거부할 권리</dt><dd>동의하지 않으셔도 됩니다. 다만 동의하지 않으면 상품권을 보내드릴 수 없습니다. 이미 제출한 응답에는 영향이 없습니다.</dd>'
     +contact+'</dl></div>'
     +'<label class="opt sq" id="cal"><input type="checkbox" id="ca"><span class="mk"></span><span class="ot"><b>위 내용을 확인했으며 개인정보 수집·이용에 동의합니다. (필수)</b></span></label>'
     +'<div class="err" id="ce" hidden></div>'
-    +'<button class="btn full" id="cs" type="button" disabled>쿠폰 신청하기</button>'
-    +'<button class="lnk" id="cskip" type="button">쿠폰을 받지 않고 마치기</button>'
+    +'<button class="btn full" id="cs" type="button" disabled>상품권 신청하기</button>'
+    +'<button class="lnk" id="cskip" type="button">상품권을 받지 않고 마치기</button>'
     +'</section>';
 }
 function bindCouponForm(){
   var cn=document.getElementById('cn'), cph=document.getElementById('cph'), ca=document.getElementById('ca'), cs=document.getElementById('cs'), ce=document.getElementById('ce');
   function ok(){ return cn.value.trim().length>=2 && phoneOk(cph.value) && ca.checked; }
   function upd(){ cs.disabled=!ok(); }
-  function fail(msg){ ce.hidden=false; ce.textContent=msg; cs.textContent='쿠폰 신청하기'; upd(); }
+  function fail(msg){ ce.hidden=false; ce.textContent=msg; cs.textContent='상품권 신청하기'; upd(); }
   cn.addEventListener('input',upd);
   cph.addEventListener('input',function(){ cph.value=fmtPhone(cph.value); upd(); });
   ca.addEventListener('change',function(){ document.getElementById('cal').classList.toggle('on',ca.checked); upd(); });
@@ -650,10 +653,10 @@ function renderDone(){
   var h='<div class="done"><div class="ck">✓</div><h1>'+(S.alreadyBefore?'이미 제출하셨습니다':'제출이 완료되었습니다')+'</h1><p class="sub">응답해 주셔서 감사합니다.</p></div>';
   if(c==='pending'){ h+=couponFormHtml(); }
   else if(c==='requested'){ h+='<div class="info"><b>'+esc(CONFIG.COUPON_LABEL)+' 신청이 완료되었습니다.</b><br>'+esc(CONFIG.COUPON_SEND_NOTE)+'</div><p class="sub" style="text-align:center">이제 창을 닫으셔도 됩니다.</p>'; }
-  else { h+='<p class="sub" style="text-align:center">쿠폰을 받지 않고 마치셨습니다. 이제 창을 닫으셔도 됩니다.</p><button class="lnk" id="cback" type="button">쿠폰 신청 화면으로 돌아가기</button>'; }
+  else { h+='<p class="sub" style="text-align:center">상품권을 받지 않고 마치셨습니다. 이제 창을 닫으셔도 됩니다.</p><button class="lnk" id="cback" type="button">상품권 신청 화면으로 돌아가기</button>'; }
   if(DEMO){
     var list=store.get(K.demo)||[], cl=store.get(K.coupon)||[];
-    h+='<div class="note"><b>데모 전용 영역</b> (실제 배포 시 표시되지 않음)<br>저장된 데모 응답 '+list.length+'건 · 쿠폰 신청 '+cl.length+'건<br>'
+    h+='<div class="note"><b>데모 전용 영역</b> (실제 배포 시 표시되지 않음)<br>저장된 데모 응답 '+list.length+'건 · 상품권 신청 '+cl.length+'건<br>'
       +'<button class="btn l" id="dl" type="button">CSV 내려받기</button><button class="btn l" id="sh" type="button">마지막 응답 보기</button><pre id="pre" hidden></pre></div>';
   }
   app.innerHTML=h;
